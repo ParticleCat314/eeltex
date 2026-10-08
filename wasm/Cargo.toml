@@ -1,0 +1,27 @@
+# The demo page's wasm module: a raw C ABI over eeltex's editor, no bindgen.
+[workspace]
+
+[package]
+name = "eeltex-demo"
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+eeltex = { git = "https://github.com/ParticleCat314/eeltex", branch = "main", features = [
+    "edit",
+    "svg",
+    "embed-math-font",
+    "formatting",
+] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+codegen-units = 1
+strip = true

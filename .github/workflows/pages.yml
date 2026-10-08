@@ -1,0 +1,60 @@
+name: Pages
+
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+    inputs:
+      latest:
+        description: Build against the newest eeltex on main instead of the locked revision
+        type: boolean
+        default: true
+
+env:
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: wasm
+      - name: let cargo fetch eeltex while the repository is private
+        run: git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
+      - name: update eeltex to main
+        if: ${{ inputs.latest }}
+        run: cargo update --manifest-path wasm/Cargo.toml -p eeltex
+      - name: build the wasm module
+        run: cargo build --release --target wasm32-unknown-unknown --manifest-path wasm/Cargo.toml ${{ !inputs.latest && '--locked' || '' }}
+      - name: assemble the site
+        run: |
+          mkdir _site
+          cp index.html app.js _site/
+          cp wasm/target/wasm32-unknown-unknown/release/eeltex_demo.wasm _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

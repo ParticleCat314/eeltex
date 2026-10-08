@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eeltex editor</title>
+<meta name="description" content="Type and edit a LaTeX formula, rendered to SVG by eeltex compiled to WebAssembly.">
+<style>
+  :root {
+    --bg: #fafaf9; --fg: #1c1917; --muted: #78716c; --line: #e7e5e4; --panel: #ffffff;
+    --accent: #2563eb; --select: rgba(37, 99, 235, 0.16); --error: #b91c1c;
+    --metric: #d97706;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c0a09; --fg: #e7e5e4; --muted: #a8a29e; --line: #292524; --panel: #1c1917;
+      --accent: #60a5fa; --select: rgba(96, 165, 250, 0.22); --error: #f87171;
+      --metric: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  a { color: var(--accent); }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+
+  #stage {
+    position: relative; margin-top: 20px; min-height: 180px; padding: 24px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    display: flex; align-items: center; overflow: hidden;
+    cursor: text; outline: none;
+  }
+  #stage:focus-within { border-color: var(--accent); }
+  #stage svg { display: block; margin: 0 auto; flex: none; max-width: none; color: var(--fg); overflow: visible; }
+  #keys { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; border: 0; resize: none; }
+
+  .ov rect, .ov line { vector-effect: non-scaling-stroke; fill: none; }
+  .ov .metric { stroke: var(--metric); stroke-dasharray: 4 3; }
+  .ov .baseline { stroke: var(--metric); }
+  .ov .node { stroke-width: 1; opacity: 0.75; }
+  .ov .node.placeholder { stroke-dasharray: 2 2; }
+  .ov .hover { stroke: var(--accent); stroke-width: 2; fill: var(--select); }
+  .ov .selection { fill: var(--select); stroke: none; }
+  .ov .caret { fill: var(--accent); stroke: none; animation: blink 1.06s steps(1) infinite; }
+  #stage:not(:focus-within) .ov .caret { opacity: 0.35; animation: none; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  #source { display: flex; gap: 8px; margin-top: 12px; }
+  #tex {
+    flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel); color: var(--fg);
+    display: block; resize: none; overflow: hidden; line-height: 1.5;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  #tex:focus { outline: none; border-color: var(--accent); }
+  #tex.bad { border-color: var(--error); }
+  #status { min-height: 1.5em; margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+  #status.bad { color: var(--error); }
+
+  #toggles { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; font-size: 14px; }
+  #toggles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; user-select: none; }
+  #toggles input { accent-color: var(--accent); margin: 0; }
+
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 640px) { .panels { grid-template-columns: 1fr; } }
+  section.panel { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--panel); }
+  section.panel h2 { margin: 0 0 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 16px; margin: 0; font-size: 13px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+  .hidden { display: none !important; }
+
+  details { margin-top: 24px; color: var(--muted); font-size: 14px; }
+  summary { cursor: pointer; }
+  kbd { font: 12px ui-monospace, Menlo, monospace; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+  table { border-collapse: collapse; margin-top: 8px; }
+  td { padding: 2px 16px 2px 0; vertical-align: top; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>eeltex</h1>
+    <p>LaTeX maths in Rust, compiled to WebAssembly. <a href="https://github.com/ParticleCat314/eeltex">Source</a></p>
+  </header>
+
+  <div id="stage" aria-label="Formula editor">
+    <textarea id="keys" autocapitalize="off" autocomplete="off" spellcheck="false" aria-label="Type maths"></textarea>
+    <span id="loading" class="mono">loading…</span>
+  </div>
+
+  <div id="source">
+    <textarea id="tex" class="mono" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="LaTeX source"></textarea>
+  </div>
+  <p id="status"></p>
+
+  <div id="toggles">
+    <label><input type="checkbox" data-toggle="boxes" checked> Node boxes</label>
+    <label><input type="checkbox" data-toggle="metrics" checked> Metrics</label>
+    <label><input type="checkbox" data-toggle="baselines"> Node baselines</label>
+    <label><input type="checkbox" data-toggle="hover" checked> Hover</label>
+    <label><input type="checkbox" data-toggle="caret" checked> Caret</label>
+    <label><input type="checkbox" data-toggle="stats" checked> Statistics</label>
+  </div>
+
+  <div class="panels" id="panels">
+    <section class="panel" id="stats-panel">
+      <h2>Statistics</h2>
+      <dl id="stats"></dl>
+    </section>
+    <section class="panel" id="hover-panel">
+      <h2>Under the pointer</h2>
+      <dl id="node"><dt>node</dt><dd>—</dd></dl>
+    </section>
+  </div>
+
+  <details>
+    <summary>Keys</summary>
+    <table>
+      <tr><td><kbd>/</kbd></td><td>fraction from the operand before the caret</td></tr>
+      <tr><td><kbd>^</kbd> <kbd>_</kbd></td><td>superscript, subscript</td></tr>
+      <tr><td><code>sqrt</code> <code>int</code> <code>sum</code> <code>alpha</code> <code>sin</code> …</td><td>turn into their command as the word completes</td></tr>
+      <tr><td><kbd>\</kbd>…, then <kbd>Enter</kbd></td><td>any LaTeX, typed raw: <code>\frac{a}{b}</code>, <code>\text{if }</code>, <code>\begin{pmatrix}</code>…</td></tr>
+      <tr><td>red text</td><td>a command that did not parse: arrow into it or click it to edit it again</td></tr>
+      <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td><td>move; with <kbd>Shift</kbd>, select; with <kbd>Ctrl</kbd>, by word</td></tr>
+      <tr><td><kbd>Enter</kbd> <kbd>&amp;</kbd></td><td>new row, new cell, inside an environment (Enter submits a raw command first)</td></tr>
+      <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Y</kbd></td><td>undo, redo</td></tr>
+      <tr><td><kbd>Ctrl</kbd> <kbd>C</kbd> <kbd>X</kbd> <kbd>V</kbd></td><td>copy, cut, paste LaTeX</td></tr>
+      <tr><td>click, double-click</td><td>place the caret, select a sub-expression</td></tr>
+    </table>
+  </details>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
