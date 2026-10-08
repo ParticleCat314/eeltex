@@ -1,0 +1,23 @@
+# Its own workspace, so eframe's windowing dependencies stay out of the library's.
+[workspace]
+
+[package]
+name = "eeltex-egui-bench"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "egui stress benchmark for eeltex: relayout formulas as fast as the frame allows"
+
+[dependencies]
+eframe = { version = "0.32", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "wayland",
+    "x11",
+] }
+# `raster`, not `sdf`: egui's stock pipeline cannot run a thresholding shader.
+eeltex = { path = "../..", features = ["raster", "atlas", "embed-math-font"] }
+
+[profile.release]
+debug = true

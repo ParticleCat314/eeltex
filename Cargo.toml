@@ -1,0 +1,68 @@
+[package]
+name = "eeltex"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85.0"
+license = "MIT"
+description = "Minimal(ish) LaTex-style math typesetting in Rust." 
+authors = ["ParticleCat314"]
+readme = "README.md"
+
+exclude = ["demos/", "tests/golden/", "tests/golden.rs", ".github/"]
+
+[dependencies]
+# `opentype-layout` is required: it gates the `MATH` table.
+ttf-parser = { version = "0.25", default-features = false, features = [
+    "std",
+    "opentype-layout",
+] }
+
+[features]
+default = []
+
+# Backends
+svg = []
+raster = []
+sdf = []
+# Packs either bitmap backend into one texture.
+atlas = []
+
+# Bundles New Computer Modern Math as `Fonts::embedded()`.
+embed-math-font = []
+# Node arena, source spans, hit-testing and per-item colour.
+attrs = []
+# Interactive editing: a mutable formula tree, cursor and caret geometry.
+edit = ["attrs"]
+# The tokenizer, for syntax highlighting in an editor.
+syntax = []
+# Boxes, colour boxes, cancels, rules and struts, `\smash` and the laps,
+# `\raisebox`, size switches, and the rules of `array` (`\hline`, `|`).
+formatting = []
+
+[[example]]
+name = "render_svg"
+required-features = ["svg", "embed-math-font"]
+
+[[example]]
+name = "raster_check"
+required-features = ["raster", "embed-math-font"]
+
+[[example]]
+name = "sdf_render"
+required-features = ["atlas", "sdf", "embed-math-font"]
+
+[lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+missing_panics_doc = "warn"
+missing_errors_doc = "warn"
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"

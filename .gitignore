@@ -1,0 +1,7 @@
+/target
+/demos/*/target
+
+# Example output
+out.svg
+out.pgm
+out.ppm
