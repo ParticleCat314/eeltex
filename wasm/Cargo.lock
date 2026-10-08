@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "eeltex"
 version = "0.1.0"
-source = "git+https://github.com/ParticleCat314/eeltex?branch=main#5afb2d96c2ae12aeafc500886be8b2f41a2e7a2c"
+source = "git+https://github.com/ParticleCat314/eeltex?branch=main#c104222be51553385085a0b2d8c80a8edadd122f"
 dependencies = [
  "ttf-parser",
 ]
