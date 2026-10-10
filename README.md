@@ -3,7 +3,7 @@
 Minimal TeX-style math formula typesetting in Rust. Why? Because I couldn't find something that I was happy with.
 This project does not attempt, and will likely never attempt to be a rigourous and 100% faithful implementation of TeX.
 Nor does it implement the majority of features required of a robust typesetting system. Look elsewhere if that is what you need.
-My goal with this project was simple: *LaTeX math string to pretty math without all the dependencies".
+This is mostly for my own use. My goal with this project was simple: LaTeX math string to pretty math without all the dependencies.
 
 - One dependency: [`ttf-parser`].
 
