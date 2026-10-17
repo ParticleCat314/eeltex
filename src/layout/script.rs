@@ -80,6 +80,11 @@ pub(crate) fn attach(
     let sup_width = sup.as_ref().map_or(0.0, |f| f.width);
     let sub_width = sub.as_ref().map_or(0.0, |f| f.width);
 
+    // An accent over `x_a` belongs over the `x`, not over the whole box.
+    let accent_attach = base
+        .accent_attach
+        .unwrap_or(base_width / 2.0 + italic / 2.0);
+
     let mut out = Frag::empty(base.class);
     out.place(&mut ctx.items, base, 0.0, 0.0);
     if let Some(sup) = sup {
@@ -93,5 +98,6 @@ pub(crate) fn attach(
         base_width + (italic + sup_width).max(sub_width) + font.k(c.space_after_script(), size);
     out.italic = 0.0;
     out.single = None;
+    out.accent_attach = Some(accent_attach);
     out
 }

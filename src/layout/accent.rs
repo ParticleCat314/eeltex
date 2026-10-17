@@ -121,20 +121,24 @@ fn glyph_accent(ctx: &mut Ctx<'_, '_>, kind: Accent, base: Frag, style: MathStyl
     let accent_attach = accent.accent_attach.unwrap_or(accent.width / 2.0);
     let dx = base_attach - accent_attach;
 
-    // Accent ink bottom, y-up. `accentBaseHeight` is a floor, not a ceiling.
-    let rest = base
-        .ascent
-        .max(font.k(font.constants().accent_base_height(), size))
-        + if kind.clears_base() {
-            font.k(font.constants().overbar_vertical_gap(), size)
-        } else {
-            0.0
-        };
-    // Deliberately unclamped: a combining mark sits around x-height. An assembled accent
-    // has no single glyph to measure, so its fragment box is used instead.
+    let c = font.constants();
+    let base_height = font.k(c.accent_base_height(), size);
+    // A combining mark is drawn to sit over a base `accentBaseHeight` tall, clearance
+    // included; it rises with a taller base and is never lowered onto a shorter one.
+    let lift = (base.ascent - base_height).max(0.0);
+    let gap = if kind.clears_base() {
+        font.k(c.overbar_vertical_gap(), size)
+    } else {
+        0.0
+    };
     let dy = match accent.single {
-        Some(_) => super::ink_bottom(font, drawn, size) - rest,
-        None => -rest - accent.descent,
+        Some(_) => {
+            // Ink bottom after the lift, y-up; arrows and braces also keep the overbar gap.
+            let bottom = super::ink_bottom(font, drawn, size) + lift;
+            -(lift + (base.ascent + gap - bottom).max(0.0))
+        }
+        // An assembled accent has no single glyph to measure, so its fragment box is used.
+        None => -(base.ascent.max(base_height) + gap) - accent.descent,
     };
 
     let mut out = Frag::empty(AtomClass::Ord);
