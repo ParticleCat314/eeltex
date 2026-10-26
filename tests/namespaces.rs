@@ -30,6 +30,7 @@ fn repair_is_unfeatured() {
 #[test]
 fn svg_is_under_export() {
     let _ = eeltex::export::svg::SvgOptions::default();
+    let _ = eeltex::export::svg::SvgSprite::new(eeltex::export::svg::SpriteOptions::default());
 }
 
 #[cfg(feature = "raster")]

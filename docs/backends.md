@@ -26,6 +26,33 @@ Absolute coordinates also keep golden-file diffs readable.
 `SvgOptions::fill` defaults to `None`, which emits `currentColor`. `background`
 defaults to `None`, which leaves the document transparent.
 
+### Many formulas on one page
+
+`SvgSprite` is for a list or table of formulas. Each distinct glyph outline is
+written once, in font units, and every formula becomes a small `<svg>` of
+`<use>` references into that table:
+
+```rust
+use eeltex::export::svg::{SpriteOptions, SvgSprite};
+
+let mut sprite = SvgSprite::new(SpriteOptions::default());
+let a = sprite.fragment(&scene_a, &fonts)?;
+let b = sprite.fragment(&scene_b, &fonts)?;
+page.push_str(&sprite.take_defs()); // the outlines used so far, once
+page.push_str(&a);
+page.push_str(&b);
+```
+
+`take_defs` returns only what is new since the last call, so a page that renders
+rows as they scroll into view appends to one hidden `<svg><defs>` and never
+rebuilds it. With `inline` (the default) each fragment carries
+`style="vertical-align:…"` so it sits on the text baseline. The references are
+by id, so the defs and the fragments must be in the same document; `prefix`
+keeps two sprites apart.
+
+`demos/wasm` wraps this as a C-ABI WebAssembly module: `batch` takes many
+formulas in one call and returns the fragments plus the new defs.
+
 ## Coverage or distance field
 
 Both fill the same `Atlas` and produce the same `Quad`s:
