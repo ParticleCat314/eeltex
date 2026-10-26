@@ -19,7 +19,7 @@ cargo build --release --target wasm32-unknown-unknown --manifest-path demos/wasm
 | `out_ptr()`, `out_len()` | the result of the last call, UTF-8 |
 | `init(font_px) -> 0 \| 1` | load the font and set the pixel size; `0` on failure, with the error in the output |
 | `render(len, display) -> 0 \| 1` | one formula from the input buffer → a standalone SVG document (`to_svg`), or the error message |
-| `batch(len, display) -> n` | many formulas, separated by `\x1e`, through one `SvgSprite` → `n` fragments separated by `\x1e`, each `<svg>…</svg>` or `\x1f` + error, then `\x1d` + the new `<defs>` (possibly empty) |
+| `batch(len, display) -> n` | many formulas, separated by `\x1e`, through one `SvgSprite` → `n` fragments separated by `\x1e`, each `<svg>…</svg>` or `\x1f` + error, then `\x1d` + the new `<defs>` (possibly empty). A formula that does not parse is retried after `partial::repair`, so a truncated one still typesets |
 | `reset()` | forget the sprite's glyph table, e.g. after the page removed its `<defs>` |
 
 `batch` is the point: a page that shows a list of formulas appends the returned

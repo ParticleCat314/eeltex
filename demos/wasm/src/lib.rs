@@ -129,8 +129,9 @@ pub extern "C" fn render(len: usize, display: u32) -> u32 {
 
 /// Formulas separated by `\x1e` → fragments separated by `\x1e`, then `\x1d` and the new defs.
 ///
-/// A fragment is `<svg>…</svg>`, or `\x1f` followed by the parse or layout error. Returns the
-/// number of fragments.
+/// A fragment is `<svg>…</svg>`, or `\x1f` followed by the parse or layout error. A formula that
+/// fails to parse is retried after `partial::repair`, so a truncated preview still typesets.
+/// Returns the number of fragments.
 #[unsafe(no_mangle)]
 pub extern "C" fn batch(len: usize, display: u32) -> u32 {
     let src = input(len);
@@ -148,7 +149,16 @@ pub extern "C" fn batch(len: usize, display: u32) -> u32 {
                 out.push(RS);
             }
             n += 1;
+            // A preview may cut a formula short; `repair` closes what it can before giving up.
             let result = eeltex::render(formula, &state.fonts, &opts)
+                .or_else(|first| {
+                    let repaired = eeltex::partial::repair(formula);
+                    if repaired == formula {
+                        Err(first)
+                    } else {
+                        eeltex::render(&repaired, &state.fonts, &opts)
+                    }
+                })
                 .and_then(|scene| state.sprite.fragment(&scene, &state.fonts));
             match result {
                 Ok(fragment) => out.push_str(&fragment),
