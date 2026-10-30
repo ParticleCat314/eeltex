@@ -36,7 +36,7 @@ adds no dependencies.
 
 | feature | what it gives you |
 | --- | --- |
-| `svg` | `export::svg::to_svg`: a standalone SVG document |
+| `svg` | `export::svg::to_svg`: a standalone SVG document; `export::svg::SvgSprite`: many formulas sharing one glyph table |
 | `sdf` | `export::sdf::sdf_glyph`: a signed distance field per glyph, sharp at every size |
 | `raster` | `export::raster::rasterise_glyph`: an anti-aliased 8-bit coverage bitmap |
 | `atlas` | `export::atlas::Atlas`: packs either bitmap backend into one texture and turns a `Scene` into quads |
@@ -77,7 +77,7 @@ cargo run --example raster_check --features raster,embed-math-font       -- '\sq
 cargo run --example sdf_render   --features atlas,sdf,embed-math-font    -- '\sqrt{\pi}' out.pgm 8
 ```
 
-A re-render benchmark is in [`demos/egui`](demos/egui):
+A browser build with a C ABI (no bindgen) is in [`demos/wasm`](demos/wasm). A re-render benchmark is in [`demos/egui`](demos/egui):
 
 ```sh
 cd demos/egui && cargo run --release

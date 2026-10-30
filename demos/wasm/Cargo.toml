@@ -1,0 +1,21 @@
+[package]
+name = "eeltex-wasm"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "eeltex for the browser: a plain wasm32-unknown-unknown module with a C ABI, no bindgen."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+eeltex = { path = "../..", features = ["svg", "embed-math-font"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[workspace]
